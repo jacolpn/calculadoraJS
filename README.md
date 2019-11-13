@@ -1,6 +1,6 @@
 # Calculadora JavaScript
 
-[![Hcode Treinamentos](https://www.hcode.com.br/res/img/hcode-200x100.png)](https://www.hcode.com.br)
+[![Hcode Treinamentos](https://avatars0.githubusercontent.com/u/17248991?s=280&v=4](https://www.hcode.com.br)
 
 Calculadora desenvolvida como exemplo do Curso Completo de JavaScript na Udemy.com.
 
