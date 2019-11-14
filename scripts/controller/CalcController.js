@@ -59,7 +59,7 @@ class CalcController {
     }
 
     getResult() {
-        //console.log('getResult', this._operation);
+        console.log('getResult', this._operation);
         return eval(this._operation.join(""));
     }
 
