@@ -1,5 +1,7 @@
 class CalcController {
     constructor() {
+        this._audio = new Audio('click.mp3');
+        this._audioOnOff = false;
         this._lastOperator = '';
         this._lastNumber = '';
         this._operation = [];
@@ -10,6 +12,25 @@ class CalcController {
         this._currentDate;
         this.initialize();
         this.initButtonsEvents();
+        this.initKeyboard();
+    }
+
+    pasteFromClipboard() {
+        document.addEventListener('paste', e => {
+            let text = e.clipboardData.getData('Text');
+            this.displayCalc = parseFloat(text);
+            //console.log(text);
+        })
+    }
+
+    copyToClipboard() {
+        let input = document.createElement('input');
+        input.value = this.displayCalc;
+        document.body.appendChild(input);
+        //Se tiver input na calculadora, não precisa selecionar (select).
+        input.select();
+        document.execCommand("Copy");
+        input.remove();
     }
 
     initialize() {
@@ -19,6 +40,78 @@ class CalcController {
             this.setDisplayDateTime();
         }, 1000);
         this.setLastNumberToDisplay();
+        this.pasteFromClipboard();
+
+        document.querySelectorAll('.btn-ac').forEach(btn => {
+            btn.addEventListener('dblclick', e => {
+                this.toggleAudio();
+            })
+        })
+    }
+
+    toggleAudio() {
+        this._audioOnOff = !this._audioOnOff;
+        /*
+        this._audioOnOff = (this._audioOnOff) ? fase : true;
+
+        if (this._audioOnOff) {
+            this._audioOnOff = false;
+        } else {
+            this._audioOnOff = true;
+        }
+        */
+    }
+
+    playAudio() {
+        if (this._audioOnOff) {
+            this._audio.currentTime = 0;
+            this._audio.play();
+        }
+    }
+
+    initKeyboard() {
+        document.addEventListener('keyup', e => {
+            this.playAudio();
+
+            switch(e.key) {
+                case 'Escape':
+                    this.clearAll();
+                    break;
+                case 'Backspace':
+                    this.clearEntry();
+                    break;
+                case '+':
+                case '-':
+                case '*':
+                case '/':
+                case '%':
+                    this.addOperation(e.key);
+                    break;
+                case 'Enter':
+                case '=':
+                    this.calc();
+                    break;
+                case '.':
+                case ',':
+                    this.addDot('.');
+                    break;
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    this.addOperation(parseInt(e.key));
+                    break;
+                case 'c':
+                    if(e.ctrlKey) this.copyToClipboard();
+                    break;
+            }
+        });
     }
 
     addEventListenerAll(element, events, fn) {
@@ -30,6 +123,8 @@ class CalcController {
 
     clearAll() {
         this._operation = [];
+        this._lastNumber = '';
+        this._lastOperator = '';
         this.setLastNumberToDisplay();
     }
 
@@ -59,8 +154,14 @@ class CalcController {
     }
 
     getResult() {
-        console.log('getResult', this._operation);
-        return eval(this._operation.join(""));
+        //console.log('getResult', this._operation);
+        try {
+            return eval(this._operation.join(""));
+        } catch(e) {
+            setTimeout(() => {
+                this.setError();
+            }, 1)
+        }
     }
 
     calc() {
@@ -122,8 +223,6 @@ class CalcController {
         if (isNaN(this.getLastOperation())) {
             if (this.isOperator(value)) {
                 this.setLastOperation(value);
-            } else if(isNaN(value)) {
-                console.log('Outra coisa', value);
             } else {                
                 this.pushOperation(value);
                 this.setLastNumberToDisplay();
@@ -133,7 +232,7 @@ class CalcController {
                 this.pushOperation(value);
             } else {
                 let newValue = this.getLastOperation().toString() + value.toString();
-                this.setLastOperation(parseInt(newValue));
+                this.setLastOperation(newValue);
                 this.setLastNumberToDisplay();
             }
         }
@@ -143,7 +242,25 @@ class CalcController {
         this.displayCalc = "Error";
     }
 
+    addDot() {
+        let lastOperation = this.getLastOperation();
+        
+        if(typeof lastOperation === 'string' && lastOperation.split('').indexOf('.') > -1) {
+            return;
+        }
+
+        if(this.isOperator(lastOperation) || !lastOperation) {
+            this.pushOperation('0.');
+        } else {
+            this.setLastOperation(lastOperation.toString() + '.');
+        }
+
+        this.setLastNumberToDisplay();
+    }
+
     execBtn(value) {
+        this.playAudio();
+
         switch(value) {
             case 'ac':
                 this.clearAll();
@@ -170,7 +287,7 @@ class CalcController {
                 this.calc();
                 break;
             case 'ponto':
-                this.addOperation('.');
+                this.addDot('.');
                 break;
             case '0':
             case '1':
@@ -234,6 +351,11 @@ class CalcController {
     }
 
     set displayCalc(value) {
+        if(value.toString().length > 10) {
+            this.setError();
+            return false;
+        }
+
         this._displayCalcEl.innerHTML =  value;
     }
 
